@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html class="light" lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>tazk's</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        colors: {
+          "secondary-fixed": "#e2e2e5", "error-container": "#ffdad6", "secondary-container": "#e2e2e5",
+          "on-secondary-fixed-variant": "#454749", "outline-variant": "#bfc9be", "inverse-primary": "#8cd7a0",
+          "surface-container-highest": "#d3e4fe", "surface-container-high": "#dce9ff", "on-secondary": "#ffffff",
+          "surface-tint": "#206b3e", "tertiary-fixed-dim": "#c5c7c8", "surface-variant": "#d3e4fe",
+          "on-primary-fixed-variant": "#00522a", "tertiary": "#5a5c5d", "surface-container-lowest": "#ffffff",
+          "on-primary-container": "#f6fff4", "on-secondary-container": "#636467", "tertiary-container": "#737576",
+          "on-tertiary-fixed": "#191c1d", "on-tertiary-container": "#fcfdfe", "on-secondary-fixed": "#1a1c1e",
+          "on-tertiary": "#ffffff", "secondary": "#5d5e61", "on-error-container": "#93000a",
+          "primary-fixed": "#a7f4ba", "primary-container": "#398253", "inverse-surface": "#213145",
+          "on-tertiary-fixed-variant": "#454748", "secondary-fixed-dim": "#c6c6c9", "error": "#ba1a1a",
+          "primary-fixed-dim": "#8cd7a0", "on-surface": "#0b1c30", "outline": "#707a70",
+          "on-background": "#0b1c30", "surface-bright": "#f8f9ff", "on-error": "#ffffff",
+          "tertiary-fixed": "#e1e3e4", "surface-container": "#e5eeff", "inverse-on-surface": "#eaf1ff",
+          "on-primary": "#ffffff", "surface-dim": "#cbdbf5", "surface-container-low": "#eff4ff",
+          "primary": "#1c693c", "on-primary-fixed": "#00210d", "surface": "#f8f9ff",
+          "on-surface-variant": "#404941", "background": "#f8f9ff"
+        },
+        borderRadius: { DEFAULT: "0.25rem", lg: "0.5rem", xl: "0.75rem", full: "9999px" },
+        spacing: { "container-max": "1280px", gutter: "24px", "margin-desktop": "40px", "margin-mobile": "16px", unit: "8px" },
+        fontFamily: {
+          "body-md": ["Hanken Grotesk"], "headline-md": ["Hanken Grotesk"], "headline-lg": ["Hanken Grotesk"],
+          "body-sm": ["Hanken Grotesk"], "headline-lg-mobile": ["Hanken Grotesk"], "label-lg": ["Hanken Grotesk"],
+          "label-md": ["Hanken Grotesk"], "headline-xl": ["Hanken Grotesk"], "body-lg": ["Hanken Grotesk"]
+        },
+        fontSize: {
+          "body-md": ["16px", { lineHeight: "24px", fontWeight: "400" }],
+          "headline-md": ["24px", { lineHeight: "32px", fontWeight: "600" }],
+          "headline-lg": ["32px", { lineHeight: "40px", letterSpacing: "-0.01em", fontWeight: "600" }],
+          "body-sm": ["14px", { lineHeight: "20px", fontWeight: "400" }],
+          "headline-lg-mobile": ["28px", { lineHeight: "36px", fontWeight: "600" }],
+          "label-lg": ["14px", { lineHeight: "16px", letterSpacing: "0.05em", fontWeight: "600" }],
+          "label-md": ["12px", { lineHeight: "16px", fontWeight: "500" }],
+          "headline-xl": ["48px", { lineHeight: "56px", letterSpacing: "-0.02em", fontWeight: "700" }],
+          "body-lg": ["18px", { lineHeight: "28px", fontWeight: "400" }]
+        }
+      }
+    }
+  }
+</script>
+<style>
+  body { font-family: 'Hanken Grotesk', sans-serif; }
+  .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+  .active-scale:active { transform: scale(0.95); transition: transform 0.15s ease; }
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  .view { display: none; }
+  .view.active { display: block; }
+  .payout-card.active { border-color: #1c693c; background: #f6fff4; }
+  .toast { position: fixed; bottom: 96px; left: 50%; transform: translateX(-50%); z-index: 100; }
+</style>
+</head>
+<body class="bg-background text-on-background min-h-screen pb-24">
+
+<header class="bg-surface border-b border-outline-variant z-50 sticky top-0">
+  <div class="flex justify-between items-center px-margin-mobile h-16 w-full max-w-container-max mx-auto">
+    <div class="flex items-center gap-3">
+      <div class="w-9 h-9 rounded-full bg-primary flex items-center justify-center text-white font-bold">t</div>
+      <span class="text-headline-md font-headline-md font-bold text-primary">tazk's</span>
+    </div>
+    <div id="user-badge" class="w-8 h-8 rounded-full bg-primary-container flex items-center justify-center text-on-primary-container font-bold text-label-md">--</div>
+  </div>
+</header>
+
+<main class="max-w-container-max mx-auto px-margin-mobile pt-6">
+
+  <!-- HOME -->
+  <section id="view-home" class="view active space-y-8">
+    <div class="space-y-1">
+      <h1 class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface">Hello, <span id="home-name">there</span> 👋</h1>
+      <p class="font-body-md text-body-md text-on-surface-variant">Ready to complete some tasks today?</p>
+    </div>
+    <section class="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div class="bg-surface p-4 rounded-xl border border-outline-variant space-y-2">
+        <span class="material-symbols-outlined text-primary">account_balance_wallet</span>
+        <p class="font-label-md text-label-md text-on-surface-variant">Balance</p>
+        <p class="font-headline-md text-headline-md text-primary">$<span id="stat-balance">0.00</span></p>
+      </div>
+      <div class="bg-surface p-4 rounded-xl border border-outline-variant space-y-2">
+        <span class="material-symbols-outlined text-primary">task_alt</span>
+        <p class="font-label-md text-label-md text-on-surface-variant">Completed</p>
+        <p class="font-headline-md text-headline-md text-on-surface"><span id="stat-completed">0</span></p>
+      </div>
+      <div class="bg-surface p-4 rounded-xl border border-outline-variant space-y-2">
+        <span class="material-symbols-outlined text-primary">trending_up</span>
+        <p class="font-label-md text-label-md text-on-surface-variant">Streak</p>
+        <p class="font-headline-md text-headline-md text-on-surface"><span id="stat-streak">0</span> days</p>
+      </div>
+      <div class="bg-surface p-4 rounded-xl border border-outline-variant space-y-2">
+        <span class="material-symbols-outlined text-primary">star</span>
+        <p class="font-label-md text-label-md text-on-surface-variant">Rating</p>
+        <p class="font-headline-md text-headline-md text-on-surface"><span id="stat-rating">5.0</span></p>
+      </div>
+    </section>
+  </section>
+
+  <!-- EARN -->
+  <section id="view-earn" class="view space-y-8">
+    <section class="p-6 rounded-2xl shadow-lg relative overflow-hidden text-on-primary-container bg-primary">
+      <p class="font-label-lg text-label-lg opacity-90 mb-1">Available Balance</p>
+      <h1 class="font-headline-xl text-headline-xl tracking-tight mb-2">$<span id="earn-balance">0.00</span></h1>
+      <p class="font-body-sm text-body-sm opacity-90"><span id="earn-pending-count">0</span> submissions pending review</p>
+    </section>
+    <section>
+      <h2 class="font-headline-md text-headline-md text-on-surface mb-4">Earn Rewards</h2>
+      <div id="task-list" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+    </section>
+  </section>
+
+  <!-- MORE -->
+  <section id="view-more" class="view space-y-8">
+    <section>
+      <h2 class="font-headline-md text-headline-md text-on-surface mb-1">Daily Reward</h2>
+      <p class="font-body-sm text-body-sm text-on-surface-variant mb-4">Current streak: <span id="daily-streak">0</span> day(s)</p>
+      <button id="claim-daily-btn" class="w-full bg-primary text-white font-label-lg text-label-lg py-4 rounded-xl active-scale">Claim today's reward</button>
+    </section>
+  </section>
+
+  <!-- REFERRALS -->
+  <section id="view-referrals" class="view space-y-8">
+    <section class="rounded-xl bg-primary text-white p-6 space-y-2">
+      <h2 class="font-headline-md text-headline-md">Share the Wealth, Get Rewards</h2>
+      <p class="font-body-sm text-body-sm opacity-90">Invite your friends and earn once they're active in the app.</p>
+    </section>
+    <section class="grid grid-cols-2 gap-4">
+      <div class="bg-surface p-4 rounded-xl border border-outline-variant">
+        <p class="font-label-md text-label-md text-on-surface-variant">Total Referrals</p>
+        <p class="font-headline-md text-headline-md text-primary"><span id="ref-count">0</span></p>
+      </div>
+      <div class="bg-surface p-4 rounded-xl border border-outline-variant">
+        <p class="font-label-md text-label-md text-on-surface-variant">Earned from Referrals</p>
+        <p class="font-headline-md text-headline-md text-primary">$<span id="ref-earned">0.00</span></p>
+      </div>
+    </section>
+    <section class="bg-surface border border-outline-variant rounded-xl p-4 space-y-3">
+      <p class="font-label-md text-label-md text-on-surface-variant">Your Referral Code</p>
+      <div class="flex items-center justify-between">
+        <span id="ref-code" class="font-bold text-lg">------</span>
+        <button id="copy-ref-btn" class="bg-primary-container text-on-primary-container px-3 py-2 rounded-lg text-label-md active-scale">Copy link</button>
+      </div>
+    </section>
+  </section>
+
+  <!-- WITHDRAW -->
+  <section id="view-withdraw" class="view space-y-8">
+    <section class="rounded-xl bg-primary-container text-on-primary-container p-6">
+      <p class="font-label-lg text-label-lg uppercase tracking-wider opacity-80 mb-1">Available Balance</p>
+      <h2 class="font-headline-xl text-headline-xl">$<span id="wd-balance">0.00</span></h2>
+    </section>
+    <section>
+      <h3 class="font-headline-md text-headline-md mb-4 text-on-surface">Choose Payout Method</h3>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4" id="payout-methods">
+        <button class="payout-card active border border-outline-variant bg-white p-4 rounded-xl flex flex-col items-center justify-center gap-2" data-method="M-Pesa">
+          <span class="material-symbols-outlined text-3xl text-primary">phone_android</span>
+          <span class="font-label-md text-label-md">M-Pesa</span>
+        </button>
+        <button class="payout-card border border-outline-variant bg-white p-4 rounded-xl flex flex-col items-center justify-center gap-2" data-method="EthioTelebirr">
+          <span class="material-symbols-outlined text-3xl text-primary">account_balance</span>
+          <span class="font-label-md text-label-md">EthioTelebirr</span>
+        </button>
+        <button class="payout-card border border-outline-variant bg-white p-4 rounded-xl flex flex-col items-center justify-center gap-2" data-method="CBEBirr">
+          <span class="material-symbols-outlined text-3xl text-primary">payments</span>
+          <span class="font-label-md text-label-md">CBEBirr</span>
+        </button>
+        <button class="payout-card border border-outline-variant bg-white p-4 rounded-xl flex flex-col items-center justify-center gap-2" data-method="EBirr">
+          <span class="material-symbols-outlined text-3xl text-primary">wallet</span>
+          <span class="font-label-md text-label-md">EBirr</span>
+        </button>
+      </div>
+    </section>
+    <section class="bg-white border border-outline-variant rounded-xl p-6 shadow-sm space-y-6">
+      <div class="space-y-2">
+        <label class="block font-label-md text-label-md text-on-surface-variant">Amount to Withdraw</label>
+        <input id="wd-amount" class="w-full px-4 py-4 rounded-lg border border-outline-variant outline-none" placeholder="0.00" type="number"/>
+        <p class="text-body-sm font-body-sm text-on-surface-variant">Min: $10.00</p>
+      </div>
+      <div class="space-y-2">
+        <label class="block font-label-md text-label-md text-on-surface-variant">Account Number / Phone</label>
+        <input id="wd-account" class="w-full px-4 py-4 rounded-lg border border-outline-variant outline-none" placeholder="Enter your identifier" type="text"/>
+      </div>
+      <button id="wd-submit" class="w-full bg-primary text-white py-4 rounded-xl font-label-lg text-label-lg active-scale">Request Withdrawal</button>
+      <p id="wd-status" class="text-body-sm font-body-sm text-on-surface-variant"></p>
+    </section>
+  </section>
+
+</main>
+
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 py-2 pb-6 bg-surface border-t border-outline-variant rounded-t-xl">
+  <a data-view="home" class="nav-link flex flex-col items-center justify-center px-3 py-1" href="#">
+    <span class="material-symbols-outlined">home</span><span class="font-label-md text-label-md">Home</span>
+  </a>
+  <a data-view="earn" class="nav-link flex flex-col items-center justify-center px-3 py-1" href="#">
+    <span class="material-symbols-outlined">monetization_on</span><span class="font-label-md text-label-md">Earn</span>
+  </a>
+  <a data-view="more" class="nav-link flex flex-col items-center justify-center px-3 py-1" href="#">
+    <span class="material-symbols-outlined">grid_view</span><span class="font-label-md text-label-md">More</span>
+  </a>
+  <a data-view="referrals" class="nav-link flex flex-col items-center justify-center px-3 py-1" href="#">
+    <span class="material-symbols-outlined">group</span><span class="font-label-md text-label-md">Referrals</span>
+  </a>
+  <a data-view="withdraw" class="nav-link flex flex-col items-center justify-center px-3 py-1" href="#">
+    <span class="material-symbols-outlined">account_balance_wallet</span><span class="font-label-md text-label-md">Withdraw</span>
+  </a>
+</nav>
+
+<div id="toast" class="toast hidden bg-on-surface text-white px-4 py-3 rounded-xl shadow-lg text-body-sm"></div>
+
+<script>
+// ---------------------------------------------------------------------------
+// CONFIG -- point this at your deployed backend (see README).
+// ---------------------------------------------------------------------------
+const API_BASE = window.location.hostname === "localhost"
+  ? "http://localhost:5000"
+  : "https://YOUR-BACKEND-DOMAIN"; // <-- replace once backend is deployed
+
+const tg = window.Telegram?.WebApp;
+let state = null;
+
+function toast(msg) {
+  const el = document.getElementById("toast");
+  el.textContent = msg;
+  el.classList.remove("hidden");
+  setTimeout(() => el.classList.add("hidden"), 2500);
+}
+
+// -- Telegram plumbing: every backend call carries initData so the server
+// can verify it really came from this Telegram user (see telegram_auth.py).
+async function api(path, options = {}) {
+  const headers = { "Content-Type": "application/json", ...(options.headers || {}) };
+  if (tg?.initData) headers["X-Telegram-Init-Data"] = tg.initData;
+  const res = await fetch(API_BASE + path, { ...options, headers });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.error || `Request failed (${res.status})`);
+  }
+  return res.json();
+}
+
+function showView(name) {
+  document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
+  document.getElementById(`view-${name}`).classList.add("active");
+  document.querySelectorAll(".nav-link").forEach(a => {
+    const active = a.dataset.view === name;
+    a.classList.toggle("text-primary", active);
+    a.classList.toggle("text-on-surface-variant", !active);
+  });
+  tg?.BackButton?.[name === "home" ? "hide" : "show"]();
+}
+
+document.querySelectorAll(".nav-link").forEach(a => {
+  a.addEventListener("click", (e) => { e.preventDefault(); showView(a.dataset.view); });
+});
+
+function renderTasks(tasks) {
+  const list = document.getElementById("task-list");
+  list.innerHTML = "";
+  tasks.forEach(t => {
+    const card = document.createElement("div");
+    card.className = "bg-white p-5 rounded-xl border-l-4 border-primary border border-outline-variant active-scale cursor-pointer";
+    card.innerHTML = `
+      <div class="flex items-start justify-between mb-3">
+        <span class="bg-primary-container text-on-primary-container px-3 py-1 rounded-full text-label-md font-label-md">${t.tag || ""}</span>
+      </div>
+      <h3 class="font-headline-md text-headline-md mb-1">${t.title}</h3>
+      <p class="font-body-sm text-body-sm text-on-surface-variant mb-4">${t.description}</p>
+      <div class="flex items-center justify-between border-t border-outline-variant pt-3">
+        <span class="text-primary font-label-lg">Earn up to $${t.reward_max.toFixed(2)}/task</span>
+        <button class="do-task bg-primary text-white px-4 py-2 rounded-lg text-label-md" data-id="${t.id}">Start</button>
+      </div>`;
+    list.appendChild(card);
+  });
+  list.querySelectorAll(".do-task").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      try {
+        const r = await api(`/api/tasks/${btn.dataset.id}/complete`, { method: "POST" });
+        toast(`Submitted for review -- $${r.reward.toFixed(2)} pending`);
+      } catch (e) { toast(e.message); }
+    });
+  });
+}
+
+function renderState() {
+  const u = state.user;
+  document.getElementById("user-badge").textContent = (u.first_name || "?").slice(0, 2).toUpperCase();
+  document.getElementById("home-name").textContent = u.first_name || "there";
+  document.getElementById("stat-balance").textContent = u.balance.toFixed(2);
+  document.getElementById("stat-completed").textContent = u.completed_tasks;
+  document.getElementById("stat-streak").textContent = state.daily.streak;
+  document.getElementById("stat-rating").textContent = u.rating.toFixed(1);
+
+  document.getElementById("earn-balance").textContent = u.balance.toFixed(2);
+  renderTasks(state.tasks);
+
+  document.getElementById("daily-streak").textContent = state.daily.streak;
+  const claimBtn = document.getElementById("claim-daily-btn");
+  claimBtn.disabled = state.daily.claimed_today;
+  claimBtn.textContent = state.daily.claimed_today ? "Already claimed today" : "Claim today's reward";
+  claimBtn.classList.toggle("opacity-50", state.daily.claimed_today);
+
+  document.getElementById("ref-count").textContent = state.referrals.count;
+  document.getElementById("ref-earned").textContent = state.referrals.earned.toFixed(2);
+  document.getElementById("ref-code").textContent = state.referrals.code;
+
+  document.getElementById("wd-balance").textContent = u.balance.toFixed(2);
+}
+
+document.getElementById("claim-daily-btn").addEventListener("click", async () => {
+  try {
+    const r = await api("/api/rewards/daily/claim", { method: "POST" });
+    toast(`+$${r.reward.toFixed(2)} claimed! Streak: ${r.streak}`);
+    await loadState();
+  } catch (e) { toast(e.message); }
+});
+
+document.getElementById("copy-ref-btn").addEventListener("click", () => {
+  const code = document.getElementById("ref-code").textContent;
+  const botUsername = "YOUR_BOT_USERNAME"; // <-- replace with your bot's @username
+  const link = `https://t.me/${botUsername}?start=${code}`;
+  navigator.clipboard?.writeText(link);
+  toast("Referral link copied");
+});
+
+document.querySelectorAll(".payout-card").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".payout-card").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+  });
+});
+
+document.getElementById("wd-submit").addEventListener("click", async () => {
+  const amount = document.getElementById("wd-amount").value;
+  const account = document.getElementById("wd-account").value;
+  const method = document.querySelector(".payout-card.active")?.dataset.method;
+  const statusEl = document.getElementById("wd-status");
+  try {
+    const r = await api("/api/withdraw", { method: "POST", body: JSON.stringify({ amount, account, method }) });
+    statusEl.textContent = r.message;
+    toast("Withdrawal request submitted for review");
+    await loadState();
+  } catch (e) {
+    statusEl.textContent = e.message;
+  }
+});
+
+async function loadState() {
+  state = await api("/api/state");
+  renderState();
+}
+
+async function boot() {
+  tg?.ready();
+  tg?.expand();
+  try {
+    await api("/api/auth", { method: "POST" }); // creates the user on first visit
+    await loadState();
+  } catch (e) {
+    toast("Could not connect: " + e.message);
+  }
+}
+
+boot();
+</script>
+</body>
+</html>
