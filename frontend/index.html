@@ -106,6 +106,45 @@
         <p class="font-label-md text-label-md text-on-surface-variant">Rating</p>
         <p class="font-headline-md text-headline-md text-on-surface"><span id="stat-rating">5.0</span></p>
       </div>
+      <div class="bg-surface p-4 rounded-xl border border-outline-variant space-y-2">
+        <span class="material-symbols-outlined text-primary">military_tech</span>
+        <p class="font-label-md text-label-md text-on-surface-variant">Points</p>
+        <p class="font-headline-md text-headline-md text-on-surface"><span id="stat-points">0</span></p>
+        <p id="stat-level" class="font-label-md text-label-md text-primary">Bronze Learner</p>
+      </div>
+    </section>
+
+    <!-- TUTORIALS -->
+    <section id="tutorials-section" class="space-y-3 hidden">
+      <h2 class="font-headline-md text-headline-md text-on-surface">Tutorials</h2>
+      <div class="relative bg-black rounded-xl overflow-hidden aspect-video">
+        <iframe id="tutorial-player" class="w-full h-full" src="" frameborder="0"
+          allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+      </div>
+      <button id="tutorial-fullscreen-btn" class="w-full bg-primary-container text-on-primary-container py-2 rounded-lg text-label-md font-label-md">Watch Fullscreen (earns points)</button>
+      <div class="relative flex items-center gap-2">
+        <button id="tutorial-prev-btn" class="flex-shrink-0 bg-surface border border-outline-variant rounded-full w-9 h-9 flex items-center justify-center">
+          <span class="material-symbols-outlined text-lg">chevron_left</span>
+        </button>
+        <div id="tutorial-card" class="flex-1 flex gap-3 bg-surface border border-outline-variant rounded-lg p-3 cursor-pointer overflow-hidden"></div>
+        <button id="tutorial-next-btn" class="flex-shrink-0 bg-surface border border-outline-variant rounded-full w-9 h-9 flex items-center justify-center">
+          <span class="material-symbols-outlined text-lg">chevron_right</span>
+        </button>
+      </div>
+      <div id="tutorial-dots" class="flex justify-center gap-2"></div>
+    </section>
+
+    <!-- PROMOTIONS -->
+    <section id="promo-section" class="space-y-3 hidden">
+      <h2 class="font-headline-md text-headline-md text-on-surface">Promotions</h2>
+      <div id="promo-carousel" class="relative rounded-xl overflow-hidden bg-surface border border-outline-variant" style="aspect-ratio: 16/9;"></div>
+      <div id="promo-dots" class="flex justify-center gap-2"></div>
+    </section>
+
+    <!-- MOMENTS (gifs/animations) -->
+    <section id="moments-section" class="space-y-3 hidden">
+      <h2 class="font-headline-md text-headline-md text-on-surface">Moments</h2>
+      <div id="moments-strip" class="flex gap-3 overflow-x-auto no-scrollbar pb-2"></div>
     </section>
   </section>
 
@@ -220,13 +259,24 @@
 
 <div id="toast" class="toast hidden bg-on-surface text-white px-4 py-3 rounded-xl shadow-lg text-body-sm"></div>
 
+<div id="fs-modal" class="hidden fixed inset-0 bg-black z-[200] flex flex-col">
+  <div class="flex items-center justify-between p-3 text-white">
+    <span id="fs-points-badge" class="bg-primary px-3 py-1 rounded-full text-label-md font-label-md"></span>
+    <button id="fs-close-btn" class="text-white text-2xl px-2">&times;</button>
+  </div>
+  <div class="flex-1">
+    <iframe id="fs-player" class="w-full h-full" src="" frameborder="0"
+      allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+  </div>
+</div>
+
 <script>
 // ---------------------------------------------------------------------------
 // CONFIG -- point this at your deployed backend (see README).
 // ---------------------------------------------------------------------------
 const API_BASE = window.location.hostname === "localhost"
   ? "http://localhost:5000"
-  : "https://YOUR-BACKEND-DOMAIN"; // <-- replace once backend is deployed
+  : "https://tazks-realapi-2026.onrender.com"; // real backend URL
 
 const tg = window.Telegram?.WebApp;
 let state = null;
@@ -294,14 +344,204 @@ function renderTasks(tasks) {
   });
 }
 
+function getYoutubeId(url) {
+  if (!url) return null;
+  const match = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([\w-]{11})/);
+  return match ? match[1] : null;
+}
+
+function youtubeEmbedUrl(url, autoplay) {
+  const id = getYoutubeId(url);
+  if (!id) return "";
+  return `https://www.youtube.com/embed/${id}?rel=0&modestbranding=1${autoplay ? "&autoplay=1&mute=1" : ""}`;
+}
+
+function levelForPoints(points) {
+  if (points >= 300) return "Diamond Learner";
+  if (points >= 150) return "Gold Learner";
+  if (points >= 50) return "Silver Learner";
+  return "Bronze Learner";
+}
+
+let watchedBannerIds = new Set();
+let currentTutorialId = null;
+
+let tutorialVideos = [];
+let tutorialIndex = 0;
+
+function selectTutorialByIndex(i) {
+  if (!tutorialVideos.length) return;
+  tutorialIndex = (i + tutorialVideos.length) % tutorialVideos.length;
+  const v = tutorialVideos[tutorialIndex];
+  currentTutorialId = v.id;
+  document.getElementById("tutorial-player").src = youtubeEmbedUrl(v.link_url, true);
+  renderTutorialCard(v);
+}
+
+function renderTutorialCard(v) {
+  const thumb = v.image_url || (getYoutubeId(v.link_url) ? `https://img.youtube.com/vi/${getYoutubeId(v.link_url)}/hqdefault.jpg` : "");
+  const watched = watchedBannerIds.has(v.id);
+  const card = document.getElementById("tutorial-card");
+  card.innerHTML = `
+    <div class="relative w-20 h-20 flex-shrink-0">
+      <img src="${thumb}" class="w-20 h-20 object-cover rounded-md" alt="">
+      ${watched ? '<span class="absolute -top-1 -right-1 bg-primary text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">✓</span>' : ""}
+    </div>
+    <div class="min-w-0 flex-1">
+      <p class="font-label-lg text-label-lg leading-tight mb-1">${v.title}</p>
+      <p class="text-xs text-on-surface-variant leading-snug" style="display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;">${v.description || ""}</p>
+    </div>`;
+
+  const dots = document.getElementById("tutorial-dots");
+  dots.innerHTML = "";
+  tutorialVideos.forEach((_, i) => {
+    const dot = document.createElement("span");
+    dot.className = `w-2 h-2 rounded-full cursor-pointer ${i === tutorialIndex ? "bg-primary" : "bg-outline-variant"}`;
+    dot.addEventListener("click", () => selectTutorialByIndex(i));
+    dots.appendChild(dot);
+  });
+}
+
+function renderTutorials(videos) {
+  const section = document.getElementById("tutorials-section");
+  if (!videos || videos.length === 0) { section.classList.add("hidden"); return; }
+  section.classList.remove("hidden");
+  tutorialVideos = videos;
+
+  const keepIndex = tutorialVideos.findIndex(v => v.id === currentTutorialId);
+  selectTutorialByIndex(keepIndex >= 0 ? keepIndex : 0);
+}
+
+document.getElementById("tutorial-prev-btn").addEventListener("click", () => selectTutorialByIndex(tutorialIndex - 1));
+document.getElementById("tutorial-next-btn").addEventListener("click", () => selectTutorialByIndex(tutorialIndex + 1));
+document.getElementById("tutorial-card").addEventListener("click", () => {
+  const v = tutorialVideos[tutorialIndex];
+  if (v) openFullscreenVideo(v);
+});
+
+// swipe support on the card (left = next, right = prev)
+(() => {
+  let touchStartX = null;
+  const card = document.getElementById("tutorial-card");
+  card.addEventListener("touchstart", (e) => { touchStartX = e.touches[0].clientX; });
+  card.addEventListener("touchend", (e) => {
+    if (touchStartX === null) return;
+    const dx = e.changedTouches[0].clientX - touchStartX;
+    if (Math.abs(dx) > 40) selectTutorialByIndex(tutorialIndex + (dx < 0 ? 1 : -1));
+    touchStartX = null;
+  });
+})();
+
+let promoTimer = null;
+
+function renderPromos(photos) {
+  const section = document.getElementById("promo-section");
+  const carousel = document.getElementById("promo-carousel");
+  const dots = document.getElementById("promo-dots");
+  clearInterval(promoTimer);
+
+  if (!photos || photos.length === 0) { section.classList.add("hidden"); return; }
+  section.classList.remove("hidden");
+
+  let idx = 0;
+  function show(i) {
+    idx = i;
+    const p = photos[idx];
+    carousel.innerHTML = `
+      <img src="${p.image_url}" class="w-full h-full object-cover" alt="">
+      <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-3">
+        <p class="text-white font-label-lg text-label-lg">${p.title}</p>
+        <p class="text-white/90 text-xs">${p.description || ""}</p>
+      </div>`;
+    carousel.style.cursor = p.link_url ? "pointer" : "default";
+    carousel.onclick = p.link_url ? () => { tg?.openLink ? tg.openLink(p.link_url) : window.open(p.link_url, "_blank"); } : null;
+    dots.querySelectorAll("span").forEach((d, i2) => d.classList.toggle("bg-primary", i2 === idx));
+  }
+
+  dots.innerHTML = "";
+  photos.forEach((_, i) => {
+    const dot = document.createElement("span");
+    dot.className = "w-2 h-2 rounded-full bg-outline-variant cursor-pointer";
+    dot.addEventListener("click", () => show(i));
+    dots.appendChild(dot);
+  });
+
+  show(0);
+  promoTimer = setInterval(() => show((idx + 1) % photos.length), 4000);
+}
+
+function renderMoments(gifs) {
+  const section = document.getElementById("moments-section");
+  const strip = document.getElementById("moments-strip");
+  if (!gifs || gifs.length === 0) { section.classList.add("hidden"); return; }
+  section.classList.remove("hidden");
+  strip.innerHTML = "";
+  gifs.forEach(g => {
+    const card = document.createElement("div");
+    card.className = "flex-shrink-0 bg-surface border border-outline-variant rounded-lg overflow-hidden";
+    card.style.maxHeight = "160px";
+    card.innerHTML = `
+      <img src="${g.image_url}" class="h-[120px] w-auto object-contain" alt="">
+      ${g.title ? `<p class="text-xs text-center px-2 py-1 truncate max-w-[160px]">${g.title}</p>` : ""}`;
+    if (g.link_url) {
+      card.style.cursor = "pointer";
+      card.addEventListener("click", () => { tg?.openLink ? tg.openLink(g.link_url) : window.open(g.link_url, "_blank"); });
+    }
+    strip.appendChild(card);
+  });
+}
+
+async function openFullscreenVideo(banner) {
+  document.getElementById("fs-player").src = youtubeEmbedUrl(banner.link_url, true);
+  document.getElementById("fs-modal").classList.remove("hidden");
+  document.getElementById("fs-points-badge").textContent = watchedBannerIds.has(banner.id)
+    ? "Already earned" : `+${banner.points} pts`;
+
+  if (!watchedBannerIds.has(banner.id)) {
+    try {
+      const r = await api(`/api/banners/${banner.id}/watch`, { method: "POST" });
+      if (r.newly_awarded) {
+        watchedBannerIds.add(banner.id);
+        document.getElementById("stat-points").textContent = r.total_points;
+        document.getElementById("stat-level").textContent = levelForPoints(r.total_points);
+        toast(`+${r.newly_awarded} points earned!`);
+        if (r.bonus_awarded) toast(`Tutorials complete! +${r.bonus_awarded} bonus points`);
+      }
+    } catch (e) { /* points are a bonus feature, don't block video playback on failure */ }
+  }
+}
+
+document.getElementById("tutorial-fullscreen-btn").addEventListener("click", () => {
+  const banner = state.banners.find(b => b.id === currentTutorialId);
+  if (banner) openFullscreenVideo(banner);
+});
+
+document.getElementById("fs-close-btn").addEventListener("click", () => {
+  document.getElementById("fs-modal").classList.add("hidden");
+  document.getElementById("fs-player").src = "";
+});
+
+function renderBanners(banners) {
+  const videos = (banners || []).filter(b => b.media_type === "video" && b.link_url);
+  const photos = (banners || []).filter(b => b.media_type === "photo" && b.image_url);
+  const gifs = (banners || []).filter(b => b.media_type === "gif" && b.image_url);
+  renderTutorials(videos);
+  renderPromos(photos);
+  renderMoments(gifs);
+}
+
 function renderState() {
   const u = state.user;
+  watchedBannerIds = new Set(state.watched_banner_ids || []);
   document.getElementById("user-badge").textContent = (u.first_name || "?").slice(0, 2).toUpperCase();
   document.getElementById("home-name").textContent = u.first_name || "there";
   document.getElementById("stat-balance").textContent = u.balance.toFixed(2);
   document.getElementById("stat-completed").textContent = u.completed_tasks;
   document.getElementById("stat-streak").textContent = state.daily.streak;
   document.getElementById("stat-rating").textContent = u.rating.toFixed(1);
+  document.getElementById("stat-points").textContent = u.points || 0;
+  document.getElementById("stat-level").textContent = levelForPoints(u.points || 0);
+  renderBanners(state.banners);
 
   document.getElementById("earn-balance").textContent = u.balance.toFixed(2);
   renderTasks(state.tasks);
@@ -329,7 +569,7 @@ document.getElementById("claim-daily-btn").addEventListener("click", async () =>
 
 document.getElementById("copy-ref-btn").addEventListener("click", () => {
   const code = document.getElementById("ref-code").textContent;
-  const botUsername = "YOUR_BOT_USERNAME"; // <-- replace with your bot's @username
+  const botUsername = "Tazksearn_bot"; // no @ symbol needed
   const link = `https://t.me/${botUsername}?start=${code}`;
   navigator.clipboard?.writeText(link);
   toast("Referral link copied");

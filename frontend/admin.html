@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>tazk's Admin</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>body{font-family:sans-serif;}</style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+
+<div id="login-screen" class="max-w-sm mx-auto mt-24 bg-white p-6 rounded-xl shadow space-y-4">
+  <h1 class="text-xl font-bold">tazk's Admin</h1>
+  <input id="secret-input" type="password" placeholder="Admin password" class="w-full border rounded-lg px-3 py-2"/>
+  <button id="login-btn" class="w-full bg-green-700 text-white py-2 rounded-lg">Enter</button>
+  <p id="login-error" class="text-red-600 text-sm hidden">Wrong password or can't reach the server.</p>
+</div>
+
+<div id="admin-panel" class="hidden max-w-3xl mx-auto p-6 space-y-10">
+  <h1 class="text-2xl font-bold text-green-800">tazk's Admin</h1>
+
+  <section class="bg-white rounded-xl shadow p-5 space-y-4">
+    <h2 class="text-lg font-semibold">Add a Task</h2>
+    <div class="grid grid-cols-2 gap-3">
+      <input id="t-title" placeholder="Title" class="border rounded-lg px-3 py-2 col-span-2"/>
+      <input id="t-desc" placeholder="Description" class="border rounded-lg px-3 py-2 col-span-2"/>
+      <input id="t-category" placeholder="Category (e.g. social, ads, surveys)" class="border rounded-lg px-3 py-2"/>
+      <input id="t-tag" placeholder="Tag badge (e.g. High Yield)" class="border rounded-lg px-3 py-2"/>
+      <input id="t-min" type="number" step="0.01" placeholder="Min reward $" class="border rounded-lg px-3 py-2"/>
+      <input id="t-max" type="number" step="0.01" placeholder="Max reward $" class="border rounded-lg px-3 py-2"/>
+    </div>
+    <button id="add-task-btn" class="bg-green-700 text-white px-4 py-2 rounded-lg">Add Task</button>
+  </section>
+
+  <section class="bg-white rounded-xl shadow p-5 space-y-3">
+    <h2 class="text-lg font-semibold">Existing Tasks</h2>
+    <div id="task-table" class="space-y-2"></div>
+  </section>
+
+  <section class="bg-white rounded-xl shadow p-5 space-y-4">
+    <h2 class="text-lg font-semibold">Add Media (Tutorial Video / Promo Photo / Moment Gif)</h2>
+    <div class="grid grid-cols-2 gap-3">
+      <select id="b-type" class="border rounded-lg px-3 py-2 col-span-2">
+        <option value="video">Tutorial Video (YouTube link)</option>
+        <option value="photo">Promo Photo (slideshow)</option>
+        <option value="gif">Moment (gif/animation)</option>
+        <option value="link">Plain link (opens in browser)</option>
+      </select>
+      <input id="b-title" placeholder="Title / short name" class="border rounded-lg px-3 py-2 col-span-2"/>
+      <input id="b-desc" placeholder="Description (max ~3 lines shown)" class="border rounded-lg px-3 py-2 col-span-2"/>
+      <input id="b-image" placeholder="Image/thumbnail URL (optional for video -- auto-fetched from YouTube if blank)" class="border rounded-lg px-3 py-2 col-span-2"/>
+      <input id="b-link" placeholder="Link URL (YouTube URL for videos, or any link)" class="border rounded-lg px-3 py-2 col-span-2"/>
+      <input id="b-points" type="number" placeholder="Points (videos only, e.g. 10)" class="border rounded-lg px-3 py-2"/>
+      <input id="b-order" type="number" placeholder="Sort order (0 = first)" class="border rounded-lg px-3 py-2"/>
+    </div>
+    <button id="add-banner-btn" class="bg-green-700 text-white px-4 py-2 rounded-lg">Add</button>
+  </section>
+
+  <section class="bg-white rounded-xl shadow p-5 space-y-3">
+    <h2 class="text-lg font-semibold">Existing Media</h2>
+    <div id="banner-table" class="space-y-2"></div>
+  </section>
+</div>
+
+<script>
+const API_BASE = window.location.hostname === "localhost"
+  ? "http://localhost:5000"
+  : "https://tazks-realapi-2026.onrender.com"; // real backend URL
+
+let SECRET = "";
+
+async function adminApi(path, options = {}) {
+  const headers = { "Content-Type": "application/json", "X-Admin-Secret": SECRET, ...(options.headers || {}) };
+  const res = await fetch(API_BASE + path, { ...options, headers });
+  if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || `Request failed (${res.status})`);
+  return res.json();
+}
+
+document.getElementById("login-btn").addEventListener("click", async () => {
+  SECRET = document.getElementById("secret-input").value.trim();
+  try {
+    await loadTasks();
+    await loadBanners();
+    document.getElementById("login-screen").classList.add("hidden");
+    document.getElementById("admin-panel").classList.remove("hidden");
+  } catch (e) {
+    document.getElementById("login-error").classList.remove("hidden");
+  }
+});
+
+function taskRow(t) {
+  const div = document.createElement("div");
+  div.className = "flex items-center justify-between border rounded-lg px-3 py-2";
+  div.innerHTML = `
+    <div>
+      <p class="font-medium">${t.title} <span class="text-xs text-gray-500">(${t.category}${t.tag ? ", " + t.tag : ""})</span></p>
+      <p class="text-sm text-gray-600">${t.description}</p>
+      <p class="text-sm text-green-700">$${t.reward_min.toFixed(2)} - $${t.reward_max.toFixed(2)} ${t.is_active ? "" : "<span class='text-red-500'>(inactive)</span>"}</p>
+    </div>
+    <div class="flex gap-2">
+      <button class="toggle-task text-sm bg-gray-200 px-2 py-1 rounded" data-id="${t.id}" data-active="${t.is_active}">${t.is_active ? "Disable" : "Enable"}</button>
+      <button class="delete-task text-sm bg-red-100 text-red-700 px-2 py-1 rounded" data-id="${t.id}">Delete</button>
+    </div>`;
+  return div;
+}
+
+async function loadTasks() {
+  const { tasks } = await adminApi("/api/admin/tasks");
+  const table = document.getElementById("task-table");
+  table.innerHTML = "";
+  tasks.forEach(t => table.appendChild(taskRow(t)));
+
+  table.querySelectorAll(".delete-task").forEach(btn => btn.addEventListener("click", async () => {
+    if (!confirm("Delete this task?")) return;
+    await adminApi(`/api/admin/tasks/${btn.dataset.id}`, { method: "DELETE" });
+    loadTasks();
+  }));
+  table.querySelectorAll(".toggle-task").forEach(btn => btn.addEventListener("click", async () => {
+    const t = tasks.find(x => x.id == btn.dataset.id);
+    t.is_active = t.is_active ? 0 : 1;
+    await adminApi(`/api/admin/tasks/${t.id}`, { method: "PUT", body: JSON.stringify(t) });
+    loadTasks();
+  }));
+}
+
+document.getElementById("add-task-btn").addEventListener("click", async () => {
+  const body = {
+    title: document.getElementById("t-title").value,
+    description: document.getElementById("t-desc").value,
+    category: document.getElementById("t-category").value,
+    tag: document.getElementById("t-tag").value,
+    reward_min: document.getElementById("t-min").value,
+    reward_max: document.getElementById("t-max").value,
+  };
+  try {
+    await adminApi("/api/admin/tasks", { method: "POST", body: JSON.stringify(body) });
+    ["t-title", "t-desc", "t-category", "t-tag", "t-min", "t-max"].forEach(id => document.getElementById(id).value = "");
+    loadTasks();
+  } catch (e) { alert(e.message); }
+});
+
+function bannerRow(b) {
+  const div = document.createElement("div");
+  div.className = "flex items-center justify-between border rounded-lg px-3 py-2";
+  div.innerHTML = `
+    <div>
+      <p class="font-medium">${b.title} <span class="text-xs bg-gray-200 px-2 py-0.5 rounded">${b.media_type}</span> ${b.is_active ? "" : "<span class='text-red-500 text-xs'>(inactive)</span>"}</p>
+      <p class="text-sm text-gray-600">${b.description || ""}</p>
+      <p class="text-sm text-blue-600 break-all">${b.link_url || ""}</p>
+      ${b.media_type === "video" ? `<p class="text-sm text-green-700">${b.points} points</p>` : ""}
+    </div>
+    <div class="flex gap-2">
+      <button class="toggle-banner text-sm bg-gray-200 px-2 py-1 rounded" data-id="${b.id}">${b.is_active ? "Disable" : "Enable"}</button>
+      <button class="delete-banner text-sm bg-red-100 text-red-700 px-2 py-1 rounded" data-id="${b.id}">Delete</button>
+    </div>`;
+  return div;
+}
+
+async function loadBanners() {
+  const { banners } = await adminApi("/api/admin/banners");
+  const table = document.getElementById("banner-table");
+  table.innerHTML = "";
+  banners.forEach(b => table.appendChild(bannerRow(b)));
+
+  table.querySelectorAll(".delete-banner").forEach(btn => btn.addEventListener("click", async () => {
+    if (!confirm("Delete this banner?")) return;
+    await adminApi(`/api/admin/banners/${btn.dataset.id}`, { method: "DELETE" });
+    loadBanners();
+  }));
+  table.querySelectorAll(".toggle-banner").forEach(btn => btn.addEventListener("click", async () => {
+    const b = banners.find(x => x.id == btn.dataset.id);
+    b.is_active = b.is_active ? 0 : 1;
+    await adminApi(`/api/admin/banners/${b.id}`, { method: "PUT", body: JSON.stringify(b) });
+    loadBanners();
+  }));
+}
+
+document.getElementById("add-banner-btn").addEventListener("click", async () => {
+  const body = {
+    media_type: document.getElementById("b-type").value,
+    title: document.getElementById("b-title").value,
+    description: document.getElementById("b-desc").value,
+    image_url: document.getElementById("b-image").value,
+    link_url: document.getElementById("b-link").value,
+    points: document.getElementById("b-points").value || 0,
+    sort_order: document.getElementById("b-order").value || 0,
+  };
+  try {
+    await adminApi("/api/admin/banners", { method: "POST", body: JSON.stringify(body) });
+    ["b-title", "b-desc", "b-image", "b-link", "b-points", "b-order"].forEach(id => document.getElementById(id).value = "");
+    loadBanners();
+  } catch (e) { alert(e.message); }
+});
+</script>
+</body>
+</html>

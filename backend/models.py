@@ -22,6 +22,11 @@ CREATE TABLE IF NOT EXISTS users (
     referred_by INTEGER REFERENCES users(id),
     daily_streak INTEGER NOT NULL DEFAULT 0,
     last_daily_claim TEXT,
+    phone TEXT,
+    privacy_accepted_at TEXT,
+    phone_verified_at TEXT,
+    points INTEGER NOT NULL DEFAULT 0,
+    tutorials_bonus_claimed INTEGER NOT NULL DEFAULT 0,
     created_at TEXT NOT NULL
 );
 
@@ -62,6 +67,28 @@ CREATE TABLE IF NOT EXISTS referral_bonuses (
     bonus REAL NOT NULL,
     created_at TEXT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS banners (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT NOT NULL,
+    description TEXT,
+    image_url TEXT,
+    link_url TEXT,          -- video: a YouTube link. photo/gif: usually unused
+    media_type TEXT NOT NULL DEFAULT 'link',  -- 'video' | 'photo' | 'gif' | 'link'
+    points INTEGER NOT NULL DEFAULT 0,        -- awarded once per user for 'video' type
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    is_active INTEGER NOT NULL DEFAULT 1,
+    created_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS banner_views (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL REFERENCES users(id),
+    banner_id INTEGER NOT NULL REFERENCES banners(id),
+    points INTEGER NOT NULL,
+    created_at TEXT NOT NULL,
+    UNIQUE(user_id, banner_id)   -- points can only be earned once per video per user
+);
 """
 
 SEED_TASKS = [
@@ -79,9 +106,28 @@ def get_db():
     return conn
 
 
+def _migrate(conn):
+    """Adds columns to already-existing tables from before these fields
+    existed. SQLite has no 'ADD COLUMN IF NOT EXISTS', so we just try each
+    and ignore the error if it's already there."""
+    for col_def in ("phone TEXT", "privacy_accepted_at TEXT", "phone_verified_at TEXT",
+                    "points INTEGER NOT NULL DEFAULT 0", "tutorials_bonus_claimed INTEGER NOT NULL DEFAULT 0"):
+        try:
+            conn.execute(f"ALTER TABLE users ADD COLUMN {col_def}")
+        except sqlite3.OperationalError:
+            pass  # column already exists
+    for col_def in ("media_type TEXT NOT NULL DEFAULT 'link'", "points INTEGER NOT NULL DEFAULT 0"):
+        try:
+            conn.execute(f"ALTER TABLE banners ADD COLUMN {col_def}")
+        except sqlite3.OperationalError:
+            pass
+    conn.commit()
+
+
 def init_db():
     conn = get_db()
     conn.executescript(SCHEMA)
+    _migrate(conn)
     count = conn.execute("SELECT COUNT(*) c FROM tasks").fetchone()["c"]
     if count == 0:
         conn.executemany(
