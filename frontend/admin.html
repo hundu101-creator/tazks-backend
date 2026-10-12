@@ -4,7 +4,7 @@
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <title>tazk's Admin</title>
-<script src="https://cdn.tailwindcss.com"></script>
+<link href="static/css/admin.css" rel="stylesheet"/>
 <style>body{font-family:sans-serif;}</style>
 </head>
 <body class="bg-gray-100 min-h-screen">
@@ -69,9 +69,19 @@
 </div>
 
 <script>
-const API_BASE = window.location.hostname === "localhost"
-  ? "http://localhost:5000"
-  : "https://tazks-realapi-2026.onrender.com"; // real backend URL
+// API base: same-origin when the page is served by the backend on port 5000;
+// otherwise local pages (localhost / 127.0.0.1 / file:) talk to http://<host>:5000,
+// overridable with ?api=http://127.0.0.1:5099 (local pages only) or window.TAZKS_API_BASE.
+// Anywhere else (Telegram / hosted) it stays the deployed backend below.
+const API_BASE = (() => {
+  const loc = window.location;
+  const isLocal = loc.protocol === "file:" || ["localhost", "127.0.0.1"].includes(loc.hostname);
+  if (typeof window.TAZKS_API_BASE === "string") return window.TAZKS_API_BASE.replace(/\/$/, "");
+  const q = isLocal ? new URLSearchParams(loc.search).get("api") : null;
+  if (q) return q.replace(/\/$/, "");
+  if (isLocal) return loc.port === "5000" ? "" : `http://${loc.hostname || "127.0.0.1"}:5000`;
+  return "https://tazks-realapi-2026.onrender.com"; // real backend URL (unchanged)
+})();
 
 let SECRET = "";
 
