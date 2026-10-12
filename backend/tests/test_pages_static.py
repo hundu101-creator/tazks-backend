@@ -8,7 +8,7 @@ INDEX_IDS = ["view-home", "view-earn", "view-more", "view-referrals", "view-with
              "promo-section", "moments-section", "task-list", "claim-daily-btn", "copy-ref-btn", "ref-code",
              "payout-methods", "wd-submit", "fs-modal", "toast"]
 INDEX_CALLS = ["/api/auth", "/api/state", "/api/tasks/", "/api/rewards/daily/claim", "/api/withdraw",
-               "/api/banners/", "showView", "BackButton", "Telegram?.WebApp", "tg?.ready()", "tg?.expand()"]
+               "/api/banners/", "showView", "BackButton", "BackButton?.onClick(goBack)", "Telegram?.WebApp", "tg?.ready()", "tg?.expand()"]
 ADMIN_IDS = ["login-screen", "secret-input", "admin-panel", "add-task-btn", "task-table", "add-banner-btn",
              "banner-table", "completion-table"]
 ADMIN_CALLS = ["/api/admin/tasks", "/api/admin/banners", "X-Admin-Secret", "/api/admin/completions"]

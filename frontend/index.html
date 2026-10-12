@@ -301,7 +301,13 @@ async function api(path, options = {}) {
   return res.json();
 }
 
-function showView(name) {
+let currentView = "home";
+const viewHistory = []; // previous screens, for the Telegram BackButton
+
+function showView(name, fromBack = false) {
+  if (!fromBack && name !== currentView) viewHistory.push(currentView);
+  if (name === "home") viewHistory.length = 0;
+  currentView = name;
   document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
   document.getElementById(`view-${name}`).classList.add("active");
   document.querySelectorAll(".nav-link").forEach(a => {
@@ -311,6 +317,13 @@ function showView(name) {
   });
   tg?.BackButton?.[name === "home" ? "hide" : "show"]();
 }
+
+function goBack() {
+  const fs = document.getElementById("fs-modal");
+  if (!fs.classList.contains("hidden")) { document.getElementById("fs-close-btn").click(); return; }
+  showView(viewHistory.pop() || "home", true);
+}
+tg?.BackButton?.onClick(goBack);
 
 document.querySelectorAll(".nav-link").forEach(a => {
   a.addEventListener("click", (e) => { e.preventDefault(); showView(a.dataset.view); });
