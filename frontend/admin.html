@@ -37,6 +37,12 @@
     <div id="task-table" class="space-y-2"></div>
   </section>
 
+  <section class="bg-white rounded-xl shadow p-5 space-y-3">
+    <h2 class="text-lg font-semibold">Pending Submissions</h2>
+    <p class="text-sm text-gray-500">Approve to credit the task reward to the user's balance (once). Reject to refuse it.</p>
+    <div id="completion-table" class="space-y-2"></div>
+  </section>
+
   <section class="bg-white rounded-xl shadow p-5 space-y-4">
     <h2 class="text-lg font-semibold">Add Media (Tutorial Video / Promo Photo / Moment Gif)</h2>
     <div class="grid grid-cols-2 gap-3">
@@ -81,6 +87,7 @@ document.getElementById("login-btn").addEventListener("click", async () => {
   try {
     await loadTasks();
     await loadBanners();
+    await loadCompletions();
     document.getElementById("login-screen").classList.add("hidden");
     document.getElementById("admin-panel").classList.remove("hidden");
   } catch (e) {
@@ -138,6 +145,44 @@ document.getElementById("add-task-btn").addEventListener("click", async () => {
     loadTasks();
   } catch (e) { alert(e.message); }
 });
+
+const esc = (v) => String(v ?? "").replace(/[&<>"']/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
+
+function completionRow(c) {
+  const div = document.createElement("div");
+  div.className = "flex items-center justify-between border rounded-lg px-3 py-2";
+  const who = c.username ? "@" + c.username : (c.first_name || "user") + " (" + c.telegram_id + ")";
+  div.innerHTML = `
+    <div>
+      <p class="font-medium">${esc(c.task_title || "Task #" + c.task_id)} <span class="text-xs text-gray-500">#${c.id}</span></p>
+      <p class="text-sm text-gray-600">${esc(who)} &middot; ${esc(c.created_at)}</p>
+      <p class="text-sm text-green-700">$${c.reward.toFixed(2)}</p>
+    </div>
+    <div class="flex gap-2">
+      <button class="approve-completion text-sm bg-green-700 text-white px-2 py-1 rounded" data-id="${c.id}">Approve</button>
+      <button class="reject-completion text-sm bg-red-100 text-red-700 px-2 py-1 rounded" data-id="${c.id}">Reject</button>
+    </div>`;
+  return div;
+}
+
+async function loadCompletions() {
+  const { completions } = await adminApi("/api/admin/completions?status=pending_review");
+  const table = document.getElementById("completion-table");
+  table.innerHTML = completions.length ? "" : '<p class="text-sm text-gray-500">Nothing waiting for review.</p>';
+  completions.forEach(c => table.appendChild(completionRow(c)));
+
+  table.querySelectorAll(".approve-completion").forEach(btn => btn.addEventListener("click", async () => {
+    try { await adminApi(`/api/admin/completions/${btn.dataset.id}/approve`, { method: "POST" }); }
+    catch (e) { alert(e.message); }
+    loadCompletions();
+  }));
+  table.querySelectorAll(".reject-completion").forEach(btn => btn.addEventListener("click", async () => {
+    if (!confirm("Reject this submission?")) return;
+    try { await adminApi(`/api/admin/completions/${btn.dataset.id}/reject`, { method: "POST" }); }
+    catch (e) { alert(e.message); }
+    loadCompletions();
+  }));
+}
 
 function bannerRow(b) {
   const div = document.createElement("div");

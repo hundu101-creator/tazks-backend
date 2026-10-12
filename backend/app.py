@@ -336,6 +336,66 @@ def admin_delete_task(task_id):
     return jsonify(status="ok")
 
 
+@app.get("/api/admin/completions")
+def admin_list_completions():
+    """Task submissions for review. ?status=pending_review (default) | approved | rejected | all"""
+    if not admin_ok():
+        return jsonify(error="unauthorized"), 401
+    status = request.args.get("status", "pending_review")
+    sql = ("SELECT c.id, c.user_id, c.task_id, c.reward, c.status, c.created_at, "
+           "u.telegram_id, u.username, u.first_name, t.title AS task_title "
+           "FROM task_completions c JOIN users u ON u.id = c.user_id "
+           "LEFT JOIN tasks t ON t.id = c.task_id")
+    args = ()
+    if status != "all":
+        sql += " WHERE c.status = ?"
+        args = (status,)
+    conn = get_db()
+    rows = [dict(r) for r in conn.execute(sql + " ORDER BY c.id DESC", args).fetchall()]
+    conn.close()
+    return jsonify(completions=rows)
+
+
+def _review_completion(completion_id, new_status):
+    conn = get_db()
+    conn.execute("BEGIN IMMEDIATE")
+    row = conn.execute("SELECT * FROM task_completions WHERE id = ?", (completion_id,)).fetchone()
+    if not row:
+        conn.rollback(); conn.close()
+        return jsonify(error="submission not found"), 404
+    # Only a pending submission can be reviewed, so the reward is credited exactly once.
+    cur = conn.execute(
+        "UPDATE task_completions SET status = ? WHERE id = ? AND status = 'pending_review'",
+        (new_status, completion_id),
+    )
+    if cur.rowcount != 1:
+        conn.rollback(); conn.close()
+        return jsonify(error=f"submission already {row['status']}"), 409
+    if new_status == "approved":
+        conn.execute(
+            "UPDATE users SET balance = balance + ?, completed_tasks = completed_tasks + 1 WHERE id = ?",
+            (row["reward"], row["user_id"]),
+        )
+    conn.commit()
+    conn.close()
+    return jsonify(status=new_status, id=completion_id,
+                   credited=row["reward"] if new_status == "approved" else 0)
+
+
+@app.post("/api/admin/completions/<int:completion_id>/approve")
+def admin_approve_completion(completion_id):
+    if not admin_ok():
+        return jsonify(error="unauthorized"), 401
+    return _review_completion(completion_id, "approved")
+
+
+@app.post("/api/admin/completions/<int:completion_id>/reject")
+def admin_reject_completion(completion_id):
+    if not admin_ok():
+        return jsonify(error="unauthorized"), 401
+    return _review_completion(completion_id, "rejected")
+
+
 @app.get("/api/admin/banners")
 def admin_list_banners():
     if not admin_ok():
