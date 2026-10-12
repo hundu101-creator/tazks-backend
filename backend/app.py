@@ -141,6 +141,20 @@ def complete_task(task_id):
         conn.close()
         return jsonify(error="task not found"), 404
 
+    # One submission per user per task while it is pending or already approved.
+    # A rejected submission may be sent again.
+    conn.execute("BEGIN IMMEDIATE")  # lock so two quick taps cannot both pass the check
+    existing = conn.execute(
+        "SELECT status FROM task_completions WHERE user_id = ? AND task_id = ? "
+        "AND status IN ('pending_review', 'approved') ORDER BY id DESC LIMIT 1",
+        (user["id"], task_id),
+    ).fetchone()
+    if existing:
+        conn.close()
+        if existing["status"] == "approved":
+            return jsonify(error="You already completed this task and it was approved."), 409
+        return jsonify(error="You already submitted this task. It is waiting for review."), 409
+
     # Reward is queued for review, NOT auto-credited to balance.
     # Wire this up to whatever actually verifies the task was done
     # (e.g. a webhook from the ad network / survey partner) before paying out.
